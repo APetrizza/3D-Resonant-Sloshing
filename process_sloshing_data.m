@@ -101,7 +101,7 @@ time_f  = (t_start : dt : t_end)';
 % My_total = interp1(time_raw_f, My_raw, time_f, 'spline');
 % Mz_total = interp1(time_raw_f, Mz_raw, time_f, 'spline');
 
-Fx_total = interp1(time_raw_f, Fx_raw, time_f, 'pchip');   % era 'spline'
+Fx_total = interp1(time_raw_f, Fx_raw, time_f, 'pchip');   % was 'spline'
 Fy_total = interp1(time_raw_f, Fy_raw, time_f, 'pchip');
 Fz_total = interp1(time_raw_f, Fz_raw, time_f, 'pchip');
 Mx_total = interp1(time_raw_f, Mx_raw, time_f, 'pchip');
