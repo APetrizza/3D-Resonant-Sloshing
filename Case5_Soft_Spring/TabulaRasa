@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo "================================================="
+echo " CLEANING AND SETTING DIRECTORY"
+echo "================================================="
+
+
+
+rm -rf 0 processor* constant/polyMesh/boundary constant/polyMesh/faces \
+       constant/polyMesh/neighbour constant/polyMesh/owner \
+       constant/polyMesh/points constant/polyMesh/cell* \
+       constant/polyMesh/point* constant/polyMesh/level* \
+       [1-9]* results.foam *.log log.* FORCES postProcessing constant/acceleration.dat
+
+echo "================================================="
+echo " DONE "
+echo "================================================="

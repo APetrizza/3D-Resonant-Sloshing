@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# =============================================================================
+# AUTOATION SCRIPT SLOSHING 3D (interIsoFoam) - OpenFOAM v2412
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 0. CASE CLEANING AND SETTING DIRECTORY 0
+# -----------------------------------------------------------------------------
+echo "================================================="
+echo " 0. CLEANING AND SETTING DIRECTORY"
+echo "================================================="
+rm -rf 0 processor* constant/polyMesh/boundary constant/polyMesh/faces \
+       constant/polyMesh/neighbour constant/polyMesh/owner \
+       constant/polyMesh/points constant/polyMesh/cell* \
+       constant/polyMesh/point* constant/polyMesh/level* \
+       [1-9]* results.foam *.log log.* FORCES 
+
+# Copy starting fields from 0.origin to 0       
+cp -r 0.orig 0
+
+# -----------------------------------------------------------------------------
+# 1. GENERATE MESH AND INITIALIZE FIELDS
+# -----------------------------------------------------------------------------
+echo "================================================="
+echo " 1. GENERATE MESH AND INITIALIZE FIELDS"
+echo "================================================="
+echo "  -> Execute BlockMesh ( CYlindric O-Grid 3D)..."
+openfoam-docker / blockMesh > blockMesh.log 2>&1
+
+echo "  -> Set starting fluid level (setFields)..."
+openfoam-docker / setFields > setFields.log 2>&1
+
+# -----------------------------------------------------------------------------
+# 2. DECOMPOSITION AND PARALLEL RUN 
+# -----------------------------------------------------------------------------
+echo "================================================="
+echo " 2. DECOMPOSITION AND PARALLEL RUN (32 CORES)"
+echo "================================================="
+echo "  -> Domain decomposition (32 domains)..."
+openfoam-docker / decomposePar -force > decomposePar.log 2>&1
+
+echo "  -> PArallel execution of interIsoFoam..."
+openfoam-docker / mpirun -np 32 interIsoFoam -parallel > interIsoFoam.log 2>&1
+
+echo "================================================="
+echo " >>> ALLRUN COMPLETED! <<<"
+echo "================================================="
