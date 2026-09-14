@@ -62,7 +62,7 @@ Case2_Beating/
 ├── FORCES/                   # force.dat, moment.dat (OpenFOAM functionObjects output)
 ├── generate_acceleration.py  # Builds constant/acceleration.dat
 ├── Allrun / TabulaRasa       # Case execution / cleanup scripts
-├── launch.slurm              # Slurm batch submission script
+├── (launch.slurm)             # Slurm script used on our cluster — site-specific, not tracked in git
 ├── process_sloshing_data.m   # Post-processing / DSP engine
 ├── fig1_wave_probes_history.png
 ├── fig2_force_orbit.png
@@ -78,10 +78,10 @@ Case2_Beating/
 ```bash
 cd Case2_Beating/
 python3 generate_acceleration.py
-sbatch launch.slurm
+./Allrun   # or wrap in your own Slurm/PBS submission script — see root README's Execution Workflow
 ```
 
-Once the job completes, `launch.slurm` reconstructs the last timestep, extracts `FORCES/force.dat` and `FORCES/moment.dat`, writes `results.foam` for ParaView, and cleans up the `processorN/` directories. Then run the post-processing engine:
+Once the job completes, `Allrun` reconstructs the last timestep, extracts `FORCES/force.dat` and `FORCES/moment.dat` (via `cat` over `postProcessing/wallForces/*/force*.dat` — see root README), writes `results.foam` for ParaView, and cleans up the `processorN/` directories. Then run the post-processing engine:
 
 ```matlab
 process_sloshing_data

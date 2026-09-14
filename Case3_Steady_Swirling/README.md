@@ -40,7 +40,7 @@ Case3_Swirling/
 ├── FORCES/
 ├── generate_acceleration.py
 ├── Allrun
-├── launch.slurm
+├── (launch.slurm)             # Slurm script used on our cluster — site-specific, not tracked in git
 ├── process_sloshing_data.m
 ├── fig1_wave_probes_history.png
 ├── fig2_force_orbit.png
@@ -56,7 +56,7 @@ Case3_Swirling/
 ```bash
 cd Case3_Swirling/
 python3 generate_acceleration.py
-sbatch launch.slurm
+./Allrun   # or wrap in your own Slurm/PBS submission script — see root README's Execution Workflow
 process_sloshing_data   # MATLAB, run from this directory
 ```
 

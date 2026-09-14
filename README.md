@@ -59,7 +59,7 @@ To execute the pipeline and the post-processing engine, the following stack is r
 - OpenFOAM v2412 (natively installed, **or** via the Docker-based workflow described below)
 - Python 3.6+ with `numpy` (for acceleration table generation)
 - MATLAB R2021a+ or GNU Octave (for Advanced DSP post-processing)
-- Slurm Workload Manager (only needed for HPC cluster execution — see [Execution Workflow](#execution-workflow))
+- A batch scheduler (Slurm, PBS, etc.) if running on a shared HPC cluster — **not required otherwise**. This repository does not ship scheduler submission scripts (see [Execution Workflow](#execution-workflow)); if you're on a cluster, wrap `./Allrun` in whatever your site uses.
 
 ---
 
@@ -68,12 +68,12 @@ To execute the pipeline and the post-processing engine, the following stack is r
 Clone the repository and assign execution permissions to the core automation scripts:
 
 ```bash
-git clone https://github.com/yourusername/3D-Cylindrical-Sloshing.git
-cd 3D-Cylindrical-Sloshing
-chmod +x */Allrun */TabulaRasa */launch.slurm */Errata.slurm
+git clone https://github.com/APetrizza/3D-Resonant-Sloshing.git
+cd 3D-Resonant-Sloshing
+chmod +x */Allrun */TabulaRasa
 ```
 
-Each subcase contains its own execution scripts (`Allrun`, `TabulaRasa`, `generate_acceleration.py`, `launch.slurm`).
+Each subcase contains its own execution scripts (`Allrun`, `TabulaRasa`, `generate_acceleration.py`). Batch-scheduler submission scripts (`launch.slurm`, `Errata.slurm`) are **not** included — see [Execution Workflow](#execution-workflow).
 
 ---
 
@@ -100,13 +100,13 @@ Every case follows the same three-step pattern (generate forcing → run → pos
 
 ### A) HPC cluster with Slurm (the primary workflow used for this campaign)
 
+**Note:** this repository does not track scheduler submission scripts (`launch.slurm`, `Errata.slurm`) — they're site-specific (queue names, node exclusions, account strings) and not portable to your cluster. Write your own wrapper around `./Allrun`; the campaign's own `launch.slurm` used here, as a reference, was a Slurm batch script (`#SBATCH --ntasks=32 --exclusive`, plus node exclusions specific to this cluster) that called `./Allrun`, waited for it to finish, checked the log for a clean `End` at the expected `endTime`, then reconstructed the mesh/fields and extracted `FORCES/` (see the extraction commands under [Post-Processing](#post-processing-all-cases) below). If the check failed, `processor*/` was deliberately **not** deleted, so the raw parallel run could still be inspected.
+
 ```bash
 cd Case3_Steady_Swirling/
 python3 generate_acceleration.py
-sbatch launch.slurm
+sbatch your_submission_script.slurm   # your own wrapper around ./Allrun
 ```
-
-`launch.slurm` is a Slurm batch script (`#SBATCH --ntasks=32 --exclusive`, plus node exclusions specific to this cluster). It calls `./Allrun`, waits for it to finish, then checks the log for a clean `End` at the expected `endTime` before reconstructing the mesh/fields and extracting `FORCES/`. If the check fails, `processor*/` is deliberately **not** deleted, so you can inspect the raw parallel run.
 
 ### B) Local workstation (no Slurm)
 
@@ -134,9 +134,9 @@ This matters for two reasons:
 
 Because `controlDict` uses `startFrom latestTime`, relaunching **without** `TabulaRasa` on a case that already reached its `endTime` is a no-op — OpenFOAM sees it's already done and recomputes nothing. Only skip `TabulaRasa` deliberately if you are extending `endTime` to continue a run that didn't finish yet.
 
-### Re-extracting `FORCES/` without rerunning the solver (`Errata.slurm` pattern)
+### How `FORCES/` is built, and re-extracting it without rerunning the solver
 
-If only the post-processing extraction needs redoing — for example after fixing the `TabulaRasa`/`postProcessing` bug above, on a case whose solver run is already correct — you don't need to rerun the whole solve. Re-run just the function objects over the existing reconstructed time-steps:
+`FORCES/` is never OpenFOAM's raw output — it's a merged, flattened copy of the per-timestep function-object data under `postProcessing/`, built with these four commands (this is what `Allrun` runs at the end of every normal solve, and it's also all you need if only the extraction needs redoing):
 
 ```bash
 rm -rf postProcessing
@@ -151,7 +151,7 @@ cat $(ls -v postProcessing/waveProbes/*/alpha.water* 2>/dev/null) > FORCES/alpha
 cat $(ls -v postProcessing/waveProbes/*/p_rgh* 2>/dev/null) > FORCES/p_rgh
 ```
 
-This is exactly what `Case0_Chirp/Errata.slurm` and `Case5_Soft_Spring/Errata.slurm` do — use them as a template (`sbatch Errata.slurm`) for any other case that needs a `postProcessing/`-only fix. **Important**: `postProcess -time ':'` (bare colon, meaning "all times") is silently rejected by this OpenFOAM build (`Bad scalar-range parsing`) and falls back to processing nothing — always give an explicit bounded range like `'0:80'` or `'0:40'`.
+Re-run just these four `cat`s (without rerunning the solver) any time only the post-processing extraction needs redoing — for example after fixing the `TabulaRasa`/`postProcessing` bug above, on a case whose solver run is already correct. On our cluster this was wrapped in a small `Errata.slurm` helper per case (not tracked in this repo — site-specific, same reasoning as `launch.slurm` above); reproduce it locally or in your own scheduler script as needed. **Important**: `postProcess -time ':'` (bare colon, meaning "all times") is silently rejected by this OpenFOAM build (`Bad scalar-range parsing`) and falls back to processing nothing — always give an explicit bounded range like `'0:80'` or `'0:40'`.
 
 ### Post-Processing (all cases)
 
@@ -188,6 +188,10 @@ log.*
 # Regenerated by generate_acceleration.py — don't version, just rerun the script
 constant/acceleration.dat
 constant/chirp_f_inst.csv
+
+# Site-specific batch-scheduler scripts (Slurm/PBS/etc.) — not portable across
+# clusters, kept locally only. Adapt Allrun to your own scheduler.
+*.slurm
 
 # System files
 .DS_Store
@@ -354,7 +358,7 @@ Kept here as a record — several of these are structural issues in the shared c
 
 2. **`TabulaRasa` never cleaned `postProcessing/`.** Even after every dictionary was corrected and a case was relaunched, `Allrun`'s `cat postProcessing/wallForces/*/force*.dat` kept re-concatenating the *original* contaminated segment (byte-identical to the decimal) alongside genuinely new data, because the old `postProcessing/` subdirectories from the very first run were never removed. This was confirmed by comparing the exact spike values across three separate "fresh" relaunches. **Fix**: added `postProcessing` to every case's `TabulaRasa` cleanup list.
 
-3. **`postProcess -time ':'` silently does nothing.** The bare `':'` range is rejected (`Bad scalar-range parsing`) and OpenFOAM falls back to only the `constant` pseudo-time — no hard error, it just processes nothing, so a script using it can appear to succeed while producing an empty result. **Fix**: always use an explicit bounded range, e.g. `-time '0:80'`. See the `Errata.slurm` pattern in [Execution Workflow](#execution-workflow).
+3. **`postProcess -time ':'` silently does nothing.** The bare `':'` range is rejected (`Bad scalar-range parsing`) and OpenFOAM falls back to only the `constant` pseudo-time — no hard error, it just processes nothing, so a script using it can appear to succeed while producing an empty result. **Fix**: always use an explicit bounded range, e.g. `-time '0:80'`. See the `FORCES/` extraction pattern in [Execution Workflow](#execution-workflow).
 
 4. **Case 5 (shallow/soft-spring) needed case-specific tuning beyond the campaign-wide fix.** Even under the tightened settings above, violent bore/hydraulic-jump events caused sustained AMR "thrashing" — hundreds of refine/unrefine flips within a fraction of a second (e.g. 348 topology changes across 3604 timesteps in a single 0.03 s window), reaching force spikes over an order of magnitude larger than Case0's original blowup. Counter-intuitively, tightening `maxCo` further and increasing `nBufferLayers` made it *worse*, not better — ruling out "insufficient Courant margin" as the cause. Current hypothesis: `maxRefinement=1` is too shallow to stably resolve this case's steep bore fronts. **In progress**: `maxRefinement 1→2`, `refineInterval 5→3`, keeping `nBufferLayers=3`.
 

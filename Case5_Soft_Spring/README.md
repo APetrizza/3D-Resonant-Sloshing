@@ -33,7 +33,7 @@ Case5_Shallow/
 ├── system/                   # blockMeshDict, controlDict, fvSchemes, fvSolution
 ├── generate_acceleration.py  # Builds constant/acceleration.dat (soft-spring f11)
 ├── Allrun                    # Case execution script
-├── launch.slurm              # Slurm batch submission script
+├── (launch.slurm)             # Slurm script used on our cluster — site-specific, not tracked in git
 └── README.md                 # This file
 ```
 
@@ -42,7 +42,7 @@ Case5_Shallow/
 ```bash
 cd Case5_Shallow/
 python3 generate_acceleration.py
-sbatch launch.slurm
+./Allrun   # or wrap in your own Slurm/PBS submission script — see root README's Execution Workflow
 ```
 
 ## Post-Processing

@@ -53,7 +53,7 @@ Case7_Free_Decay_OffResonance/
 ├── generate_acceleration.py  # Builds constant/acceleration.dat (ramp-up + excitation + ramp-down)
 ├── Allrun                    # Case execution script
 ├── TabulaRasa                # Clean/reset script
-├── launch.slurm              # Slurm batch submission script
+├── (launch.slurm)             # Slurm script used on our cluster — site-specific, not tracked in git
 └── README.md                 # This file
 ```
 
@@ -62,7 +62,7 @@ Case7_Free_Decay_OffResonance/
 ```bash
 cd Case7_Free_Decay_OffResonance/
 python3 generate_acceleration.py   # already run once; re-run if parameters change
-sbatch launch.slurm
+./Allrun   # or wrap in your own Slurm/PBS submission script — see root README's Execution Workflow
 ```
 
 `system/controlDict` already carries the campaign-wide numerical stability fixes (`maxCo=0.3`, `maxAlphaCo=0.2`, `maxDeltaT=0.002`) and `constant/dynamicMeshDict` (`refineInterval=1`, `nBufferLayers=2`) established after the Case0/Case5 Courant-blowup investigation, so this case does not need any further numerical patching before launch.

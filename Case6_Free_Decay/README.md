@@ -36,7 +36,7 @@ Case6_FreeDecay/
 ├── system/                   # blockMeshDict, controlDict, fvSchemes, fvSolution
 ├── generate_acceleration.py  # Builds constant/acceleration.dat (excitation + shut-off)
 ├── Allrun                    # Case execution script
-├── launch.slurm              # Slurm batch submission script
+├── (launch.slurm)             # Slurm script used on our cluster — site-specific, not tracked in git
 └── README.md                 # This file
 ```
 
@@ -45,7 +45,7 @@ Case6_FreeDecay/
 ```bash
 cd Case6_FreeDecay/
 python3 generate_acceleration.py
-sbatch launch.slurm
+./Allrun   # or wrap in your own Slurm/PBS submission script — see root README's Execution Workflow
 ```
 
 Ensure the simulation end time in `system/controlDict` covers the full 30 s (10 s excitation + 20 s free decay).

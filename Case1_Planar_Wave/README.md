@@ -52,7 +52,7 @@ Case1_Planar/
 ├── FORCES/                   # force.dat, moment.dat (OpenFOAM functionObjects output)
 ├── generate_acceleration.py  # Builds constant/acceleration.dat
 ├── Allrun                    # Case execution script
-├── launch.slurm              # Slurm batch submission script
+├── (launch.slurm)             # Slurm script used on our cluster — site-specific, not tracked in git
 ├── process_sloshing_data.m   # Post-processing / DSP engine
 ├── fig1_wave_probes_history.png
 ├── fig2_force_orbit.png
@@ -68,7 +68,7 @@ Case1_Planar/
 ```bash
 cd Case1_Planar/
 python3 generate_acceleration.py
-sbatch launch.slurm
+./Allrun   # or wrap in your own Slurm/PBS submission script — see root README's Execution Workflow
 ```
 
 Once the job completes, run the post-processing engine from this directory:

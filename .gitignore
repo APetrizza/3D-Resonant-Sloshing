@@ -17,6 +17,10 @@ log.*
 constant/acceleration.dat
 constant/chirp_f_inst.csv
 
+# Site-specific batch-scheduler scripts (Slurm/PBS/etc.) — not portable across
+# clusters, kept locally only. Adapt Allrun to your own scheduler.
+*.slurm
+
 # System files
 .DS_Store
 Thumbs.db
